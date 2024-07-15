@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-
 import "@zetachain/protocol-contracts/contracts/zevm/SystemContract.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/zContract.sol";
 import "@zetachain/toolkit/contracts/OnlySystem.sol";
@@ -71,25 +70,6 @@ contract SocialMedia is zContract, OnlySystem {
         emit UserRegistered(msg.sender, _username);
     }
 
-    function registerUserCrossChain(string memory _username, uint256 destinationChainId) external {
-        require(!users[msg.sender].isRegistered, "User is already registered");
-        require(bytes(_username).length > 0, "Username should not be empty");
-
-        users[msg.sender] = User({
-            username: _username,
-            userAddress: msg.sender,
-            isRegistered: true
-        });
-
-        // Prepare the message to be sent to the destination chain
-        bytes memory message = abi.encode("registerUser", msg.sender, _username);
-        
-        // Call ZetaChain's cross-chain transfer function
-        systemContract.crossChainCall(destinationChainId, address(this), message);
-
-        emit UserRegistered(msg.sender, _username);
-    }
-
     function createPost(string memory _content) external onlyRegisteredUser {
         require(bytes(_content).length > 0, "Content should not be empty");
 
@@ -100,26 +80,6 @@ contract SocialMedia is zContract, OnlySystem {
             likes: 0,
             commentsCount: 0
         }));
-
-        emit PostCreated(msg.sender, _content, block.timestamp);
-    }
-
-    function createPostCrossChain(string memory _content, uint256 destinationChainId) external onlyRegisteredUser {
-        require(bytes(_content).length > 0, "Content should not be empty");
-
-        posts.push(Post({
-            author: msg.sender,
-            content: _content,
-            timestamp: block.timestamp,
-            likes: 0,
-            commentsCount: 0
-        }));
-
-        // Prepare the message to be sent to the destination chain
-        bytes memory message = abi.encode("createPost", msg.sender, _content);
-        
-        // Call ZetaChain's cross-chain transfer function
-        systemContract.crossChainCall(destinationChainId, address(this), message);
 
         emit PostCreated(msg.sender, _content, block.timestamp);
     }
@@ -146,29 +106,6 @@ contract SocialMedia is zContract, OnlySystem {
 
         postCommentsCount[_postId]++;
         posts[_postId].commentsCount++;
-
-        emit CommentAdded(msg.sender, _postId, _content, block.timestamp);
-    }
-
-    function addCommentCrossChain(uint256 _postId, string memory _content, uint256 destinationChainId) external onlyRegisteredUser {
-        require(_postId < posts.length, "Post does not exist");
-        require(bytes(_content).length > 0, "Comment should not be empty");
-
-        uint256 commentId = postCommentsCount[_postId];
-        postComments[_postId][commentId] = Comment({
-            commenter: msg.sender,
-            content: _content,
-            timestamp: block.timestamp
-        });
-
-        postCommentsCount[_postId]++;
-        posts[_postId].commentsCount++;
-
-        // Prepare the message to be sent to the destination chain
-        bytes memory message = abi.encode("addComment", _postId, msg.sender, _content);
-        
-        // Call ZetaChain's cross-chain transfer function
-        systemContract.crossChainCall(destinationChainId, address(this), message);
 
         emit CommentAdded(msg.sender, _postId, _content, block.timestamp);
     }
@@ -239,7 +176,6 @@ contract SocialMedia is zContract, OnlySystem {
     ) {
         require(_postId < posts.length, "Post does not exist");
         require(_commentId < postCommentsCount[_postId], "Comment does not exist");
-
         Comment memory comment = postComments[_postId][_commentId];
         return (comment.commenter, comment.content, comment.timestamp);
     }
