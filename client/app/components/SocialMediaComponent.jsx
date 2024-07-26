@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useContract } from '../../lib/Context';
 import { ethers } from 'ethers';
+import { useLogin } from '@privy-io/react-auth';
+
 
 function SocialMediaComponent() {
   const { contract } = useContract();
@@ -13,6 +15,10 @@ function SocialMediaComponent() {
   const [wallet, setWallet] = useState(null);
   const [registeredUser, setRegisteredUser] = useState(null);
   const [commentText, setCommentText] = useState(''); // State for comment text
+  const [socialAccount, setSocialAccount] = useState({ username: '', type: '' });
+  const [showModal, setShowModal] = useState(false);
+
+
 
 
   useEffect(() => {
@@ -30,6 +36,28 @@ function SocialMediaComponent() {
       fetchPosts();
     }
   }, [contract]);
+
+  useEffect(() => {
+    const storedSocialAccount = JSON.parse(localStorage.getItem('socialAccount'));
+    if (storedSocialAccount) {
+      setSocialAccount(storedSocialAccount);
+    }
+  }, []);
+
+  const handleLoginComplete = (linkedAccount) => {
+    const username = linkedAccount?.username || linkedAccount?.name;
+    if (username) {
+      localStorage.setItem('socialAccount', JSON.stringify({ username, type: linkedAccount.type }));
+      setSocialAccount({ username, type: linkedAccount.type });
+    }
+  };
+
+  const { login } = useLogin({
+    onComplete: handleLoginComplete,
+    onError: (error) => {
+      console.log(error);
+    },
+  });
 
   // wallet connect functionality
   const connectToWallet = async function () {
@@ -247,9 +275,19 @@ function SocialMediaComponent() {
         </div>
       </div>
 
-      <div className="mt-5">
-        {/* <img src={logo} alt="Logo" className="img-fluid" /> */}
-      </div>
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Select Social Account</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Button variant="primary" onClick={() => handleSocialLogin('github')} className="m-2">
+              <FaLink /> Link GitHub
+            </Button>
+            <Button className="m-2" variant="secondary" onClick={() => handleSocialLogin('google')}>
+              <FaLink /> Link Google
+            </Button>
+          </Modal.Body>
+        </Modal>
       
     </div>
   );
