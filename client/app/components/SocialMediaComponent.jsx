@@ -95,7 +95,6 @@ function SocialMediaComponent() {
       await getPosts();
     } catch (error) {
       console.error(error);
-      setMessage(error.message);
     }
   }
 
