@@ -17,7 +17,6 @@ export function ContractProvider({ children }) {
     if (!contractAddress || !contractAbi) return;
 
     const provider = getEthersProvider();
-    console.log(provider);
     const signer = provider.getSigner();
     const contractInstance = new ethers.Contract(contractAddress, contractAbi, signer);
     setContract(contractInstance);

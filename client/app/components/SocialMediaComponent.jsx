@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useContract } from '../../lib/Context';
 import { ethers } from 'ethers';
 import { useLogin } from '@privy-io/react-auth';
+import { FaThumbsUp, FaCommentDots, FaLink } from "react-icons/fa";
+import { Container, Navbar, Nav, Card, Button, Form, Alert, Row, Col, Spinner, Modal } from "react-bootstrap";
 
 
 function SocialMediaComponent() {
@@ -45,12 +47,20 @@ function SocialMediaComponent() {
   }, []);
 
   const handleLoginComplete = (linkedAccount) => {
-    const username = linkedAccount?.username || linkedAccount?.name;
-    if (username) {
-      localStorage.setItem('socialAccount', JSON.stringify({ username, type: linkedAccount.type }));
-      setSocialAccount({ username, type: linkedAccount.type });
+    const socialAccount = linkedAccount?.linkedAccounts?.find(account => 
+      account.type === 'github_oauth' || account.type === 'google_oauth'
+    );
+  
+    if (socialAccount) {
+      const username = socialAccount?.username || socialAccount?.name;
+  
+      if (username) {
+        localStorage.setItem('socialAccount', JSON.stringify({ username, type: socialAccount.type }));
+        setSocialAccount({ username, type: socialAccount.type });
+      }
     }
   };
+  
 
   const { login } = useLogin({
     onComplete: handleLoginComplete,
@@ -58,6 +68,11 @@ function SocialMediaComponent() {
       console.log(error);
     },
   });
+
+  const handleSocialLogin = (type) => {
+    login();
+    setShowModal(false);
+  };
 
   // wallet connect functionality
   const connectToWallet = async function () {
@@ -108,8 +123,12 @@ function SocialMediaComponent() {
       const tx = await contract.registerUser(username, { from: address });
       await tx.wait()
       setMessage('User registered successfully.');
-      setUsername('');
       fetchRegisteredUser()
+
+      setTimeout(() => {
+        setMessage('');
+      }, 3000);
+      
     } catch (error) {
       console.error(error);
       setMessage(error.message);
@@ -123,8 +142,13 @@ function SocialMediaComponent() {
       const tx = await contract.connect(wallet).createPost(content);
       await tx.wait()
       setMessage('Post created successfully.');
-      setContent('');
       getPosts()
+
+      setTimeout(() => {
+        setMessage('');
+        setContent('');
+      }, 3000);
+
     } catch (error) {
       console.error(error);
       setMessage(error.message);
@@ -138,7 +162,13 @@ function SocialMediaComponent() {
       const tx = await contract.connect(wallet).likePost(postId);
       await tx.wait()
       setMessage('Post liked successfully.');
-      await getPosts(); // Refresh posts after liking
+
+      setTimeout(() => {
+        setMessage('');
+      }, 3000);
+
+      getPosts(); // Refresh posts after liking
+
     } catch (error) {
       console.error(error);
       setMessage(error.message);
@@ -153,7 +183,12 @@ function SocialMediaComponent() {
       await tx.wait()
       setMessage('Comment added successfully.');
       getPosts();
-      setCommentText('')
+
+      setTimeout(() => {
+        setMessage('');
+        setCommentText('')
+      }, 3000);
+
     } catch (error) {
       console.error(error);
       setMessage(error.message);
@@ -175,7 +210,11 @@ function SocialMediaComponent() {
         fetchedPosts.push({ ...post, comments });
       }
       setPosts(fetchedPosts);
-      setMessage('');
+      
+      setTimeout(() => {
+        setMessage('');
+      }, 3000);
+
     } catch (error) {
       console.error(error);
       setMessage(error.message);
@@ -192,7 +231,9 @@ function SocialMediaComponent() {
             <ul className="navbar-nav me-auto mb-2 mb-lg-0">
               {registeredUser && (
                 <li className="nav-item">
-                  <button disabled className="btn btn-warning"> {registeredUser.userAddress.slice(0, 6)}...</button>
+                  <button disabled className="btn btn-warning"> 
+                    {registeredUser.userAddress.slice(0, 6)}...{socialAccount.username && `(${socialAccount.username})`}
+                  </button>
                 </li>
               )}
             </ul>
@@ -219,6 +260,22 @@ function SocialMediaComponent() {
 
       {/* create post section */}
       {registeredUser && (
+        <>
+         {!socialAccount.username && (
+              <Row className="mt-3">
+                <Col md={6}>
+                    <Card>
+                      <Card.Body>
+                        <Card.Title>Link Social Account</Card.Title>
+                        <Button variant="primary" onClick={() => setShowModal(true)} className="mt-2">
+                          <FaLink /> Link Social
+                        </Button>
+                      </Card.Body>
+                    </Card>
+                </Col>
+              </Row>
+            )}
+
         <div className="row mt-3">
         <div className="col-md-6">
           <div className="card">
@@ -232,6 +289,9 @@ function SocialMediaComponent() {
           </div>
         </div>
         </div>
+
+        </>
+
       )}
      
     
