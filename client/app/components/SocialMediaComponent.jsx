@@ -5,6 +5,8 @@ import { ethers } from 'ethers';
 import { useLogin } from '@privy-io/react-auth';
 import { FaThumbsUp, FaCommentDots, FaLink } from "react-icons/fa";
 import { Container, Navbar, Nav, Card, Button, Form, Alert, Row, Col, Spinner, Modal } from "react-bootstrap";
+import {FileUploadFToIPFS} from '../../lib/uploadImageToIpfs'
+import Image from 'next/image';
 
 
 function SocialMediaComponent() {
@@ -19,6 +21,8 @@ function SocialMediaComponent() {
   const [commentText, setCommentText] = useState(''); // State for comment text
   const [socialAccount, setSocialAccount] = useState({ username: '', type: '' });
   const [showModal, setShowModal] = useState(false);
+  const [profileImage, setProfileImage] = useState('');
+  const [profileImageURL, setProfileImageURL] = useState('');
 
 
 
@@ -41,10 +45,26 @@ function SocialMediaComponent() {
 
   useEffect(() => {
     const storedSocialAccount = JSON.parse(localStorage.getItem('socialAccount'));
+    const storedProfileImageURL = localStorage.getItem('profileImageURL');
     if (storedSocialAccount) {
       setSocialAccount(storedSocialAccount);
     }
+    if (storedProfileImageURL) {
+      setProfileImageURL(storedProfileImageURL);
+    }
+
   }, []);
+
+  const uploadImageToIPFS = async (file) => {
+    try {
+      const response = await FileUploadFToIPFS(file)
+      return response.pinataURL
+
+    } catch (error) {
+      console.error('Error uploading file to IPFS: ', error);
+      return null;
+    }
+  };
 
   const handleLoginComplete = (linkedAccount) => {
     const socialAccount = linkedAccount?.linkedAccounts?.find(account => 
@@ -220,25 +240,48 @@ function SocialMediaComponent() {
     }
   };
 
+  const handleProfileImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const imageUrl = await uploadImageToIPFS(file);
+      if (imageUrl) {
+        console.log(imageUrl)
+        setProfileImageURL(imageUrl);
+        localStorage.setItem('profileImageURL', imageUrl);
+      }
+    }
+  };
+
   return (
     <div className="container mt-5">
       {/* navbar section */}
-      <nav className="navbar navbar-expand-lg navbar-light bg-light">
-        <div className="container-fluid">
-          <a className="navbar-brand" href="#">Social Media</a>
-          <div className="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-              {registeredUser && (
-                <li className="nav-item">
-                  <button disabled className="btn btn-warning"> 
-                    {registeredUser.userAddress.slice(0, 6)}...{socialAccount.username && `(${socialAccount.username})`}
-                  </button>
-                </li>
-              )}
-            </ul>
-          </div>
-        </div>
-      </nav>
+      <Navbar bg="dark" expand="lg">
+          <Container>
+            <Navbar.Brand href="#" className="text-white">Social Media</Navbar.Brand>
+            <Navbar.Toggle aria-controls="basic-navbar-nav" />
+            <Navbar.Collapse id="basic-navbar-nav">
+              <Nav className="me-auto">
+                {registeredUser && (
+                  <Nav.Item>
+                    <Button variant="warning" disabled>
+                      {profileImageURL && (
+                        <Image
+                          src={profileImageURL}
+                          alt="Profile Image"
+                          className="rounded-circle"
+                          width={30}
+                          height={30}
+                        />
+                      )}
+                      {' '}
+                      {registeredUser.userAddress.slice(0, 6)}... {socialAccount.username && `(${socialAccount.username})`}
+                    </Button>
+                  </Nav.Item>
+                )}
+              </Nav>
+            </Navbar.Collapse>
+          </Container>
+        </Navbar>
 
       {/* registration section  */}
       {!registeredUser && (
@@ -269,6 +312,19 @@ function SocialMediaComponent() {
                         <Button variant="primary" onClick={() => setShowModal(true)} className="mt-2">
                           <FaLink /> Link Social
                         </Button>
+                          {!profileImageURL &&(
+                          <div className="form-group">
+                            <label htmlFor="profileImageUpload">Upload or Update Profile Image</label>
+                            <input 
+                              type="file" 
+                              className="form-control-file" 
+                              id="profileImageUpload" 
+                              onChange={handleProfileImageUpload} 
+                            />
+                          </div>
+                          )
+                        }
+                      
                       </Card.Body>
                     </Card>
                 </Col>
@@ -279,6 +335,22 @@ function SocialMediaComponent() {
         <div className="col-md-6">
           <div className="card">
             <div className="card-body">
+           
+                {!profileImageURL &&(
+                  <>
+                    <div className="form-group">
+                        <label htmlFor="profileImageUpload">Upload or Update Profile Image</label>
+                        <input 
+                          type="file" 
+                          className="form-control-file" 
+                          id="profileImageUpload" 
+                          onChange={handleProfileImageUpload} 
+                        />
+                    </div>
+                     <br />
+                     </>
+                  )
+                }
               <h5 className="card-title">Create Post</h5>
               <div className="mb-3">
                 <textarea className="form-control" rows="3" placeholder="Content" value={content} onChange={(e) => setContent(e.target.value)}></textarea>
