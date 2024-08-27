@@ -1,0 +1,35 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: SocialMedia
+    network: mainnet
+    source:
+      address: "0x8F7E127244CE8F732172402956397d68bB725D66"
+      abi: SocialMedia
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - CommentAdded
+        - PostCreated
+        - PostLiked
+        - UserRegistered
+      abis:
+        - name: SocialMedia
+          file: ./abis/SocialMedia.json
+      eventHandlers:
+        - event: CommentAdded(indexed address,indexed uint256,string,uint256)
+          handler: handleCommentAdded
+        - event: PostCreated(indexed address,string,uint256)
+          handler: handlePostCreated
+        - event: PostLiked(indexed address,indexed uint256)
+          handler: handlePostLiked
+        - event: UserRegistered(indexed address,string)
+          handler: handleUserRegistered
+      file: ./src/social-media.ts

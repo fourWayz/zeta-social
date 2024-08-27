@@ -27,6 +27,7 @@ export function ContractProvider({ children }) {
       {children}
     </ContractContext.Provider>
   );
+
 }
 
 export function useContract() {
